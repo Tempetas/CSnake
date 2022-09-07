@@ -102,8 +102,8 @@ bool input() {
 				food = sys_malloc(sizeof(struct Segment) * MAX_FOOD);
 
 				for (int i = 0, ticks = RTC_GetTicks(); i < MAX_FOOD; i++, ticks += 23) {
-					food[i].x = ((ticks % 8) + 1) * TILE_SIZE;
-					food[i].y = ((ticks % 5) + 1) * TILE_SIZE;
+					food[i].x = ((ticks % MAX_X) + 1) * TILE_SIZE;
+					food[i].y = ((ticks % MAX_Y) + 1) * TILE_SIZE;
 				}
 			}
 		} else if (state == STATE_GAME) {
@@ -165,8 +165,8 @@ void checkForFood() {
 		int ticks = RTC_GetTicks();
 
 		do {
-			food[foodIndex].x = ((ticks % MAX_X) + TILE_SIZE) * TILE_SIZE;
-			food[foodIndex].y = ((ticks % MAX_Y) + TILE_SIZE)  * TILE_SIZE;
+			food[foodIndex].x = ((ticks % MAX_X) + 1) * TILE_SIZE;
+			food[foodIndex].y = ((ticks % MAX_Y) + 1) * TILE_SIZE;
 
 			//Random magic const
 			ticks += 23;
