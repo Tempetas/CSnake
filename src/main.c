@@ -192,10 +192,10 @@ void checkForFood() {
 }
 
 int main() {
-	lastTick = RTC_GetTicks() - TICK_RATE * 2;
+	lastTick = RTC_GetTicks() - (TICK_RATE + 1);
 
-	MAX_X = LCD_WIDTH_PX / TILE_SIZE - 1;
-	MAX_Y = LCD_HEIGHT_PX / TILE_SIZE - 1;
+	MAX_X = LCD_WIDTH_PX / TILE_SIZE;
+	MAX_Y = LCD_HEIGHT_PX / TILE_SIZE;
 
 	while (true) {
 		if ((RTC_GetTicks() - lastTick) > TICK_RATE) {
@@ -217,7 +217,7 @@ int main() {
 					if (snake.x > (MAX_X - 1) * TILE_SIZE) {
 						snake.x = TILE_SIZE;
 					} else if (snake.x < TILE_SIZE) {
-						snake.x = MAX_X * TILE_SIZE;
+						snake.x = (MAX_X - 1) * TILE_SIZE;
 					}
 				} else {
 					snake.y -= (direction - 2) * TILE_SIZE;
