@@ -1,5 +1,9 @@
 //Stolen from the internet
 
+int abs(int x) {
+    return x < 0 ? -x : x;
+}
+
 void swap(char *x, char *y) {
     char t = *x; *x = *y; *y = t;
 }

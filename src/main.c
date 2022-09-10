@@ -56,9 +56,23 @@ int randint() {
 	return lastRand;
 }
 
+//TODO: make pos a vector struct in segment?
 void randomizeFood(int foodIndex) {
-	food[foodIndex].x = ((randint() % (MAX_X - 1)) + 1) * TILE_SIZE;
-	food[foodIndex].y = ((randint() % (MAX_Y - 6)) + 6) * TILE_SIZE;
+	bool collidesWithOther;
+
+	do {
+		collidesWithOther = false;
+
+		food[foodIndex].x = ((randint() % (MAX_X - 6)) + 7) * TILE_SIZE;
+		food[foodIndex].y = ((randint() % (MAX_Y - 6)) + 7) * TILE_SIZE;
+
+		for (int i = 0; i < MAX_FOOD; i++) {
+			if (i != foodIndex && (food[i].x == food[foodIndex].x && food[i].y == food[foodIndex].y)) {
+				collidesWithOther = true;
+				break;
+			}
+		}
+	} while (collidesWithOther);
 }
 
 /*void openDataFile() {
@@ -131,9 +145,8 @@ void render() {
 		drawCircle(&food[i], TILE_SIZE, (food[i].y % TILE_SIZE != 0) ? COLOR_BLACK : COLOR_RED);
 	}
 
-	char scoreStr[15] = "--Score: ";
-
-	PrintXY(1, 0, itoa(snake.y, scoreStr, 9), TEXT_MODE_NORMAL, COLOR_BLACK);
+	/*char scoreStr[15] = "--Score: ";
+	PrintXY(1, 1, itoa(TICK_RATE, scoreStr, 9), TEXT_MODE_NORMAL, COLOR_BLACK);*/
 
 	drawSquare(&snake, TILE_SIZE, COLOR_BLUE);
 
@@ -194,7 +207,7 @@ bool input() {
 			}
 
 			if (row == 0x0A) {
-				TICK_RATE = (column >= 0x04 && column <= 0x07) ? 20 - (0x07 - column) * 5 : TICK_RATE;
+				TICK_RATE = (column >= 0x03 && column <= 0x06) ? 20 - (0x06 - column) * 5 : TICK_RATE;
 			}
 		}
 
@@ -223,7 +236,8 @@ int collidesWithFood(bool headOnly) {
 	struct Segment *seg = headOnly ? &snake : lastSegment;
 	do {
 		for (int i = 0; i < MAX_FOOD; i++) {
-			if ((seg->x == food[i].x) && (seg->y == food[i].y)) {
+			//TODO: get rid of this workaround
+			if (abs(seg->x - food[i].x) < TILE_SIZE / 2 && abs(seg->y - food[i].y) < TILE_SIZE / 2) {
 				return i;
 			}
 		}

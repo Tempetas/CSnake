@@ -7,5 +7,5 @@ A simple snake add-in.
     - Fix food spawning
     - Highscore
     - Make a new logo
-    - Make the snake look better
+    - Make the snake look better (use actual sprites)
 
