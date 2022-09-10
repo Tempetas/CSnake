@@ -68,6 +68,21 @@ void addSegment() {
 	score++;
 }
 
+void drawCircle(struct Segment* pos, int radius, color_t color) {
+	const int halfSize = radius / 2;
+	for (int x = pos->x - halfSize; x < pos->x + halfSize; x++) {
+		for (int y = pos->y - halfSize; y < pos->y + halfSize; y++) {
+			//Hack! In this house we hate math.h
+			int xDiff = x - pos->x;
+			int yDiff = y - pos->y;
+
+			if (xDiff * xDiff + yDiff * yDiff < radius * radius) {
+				Bdisp_SetPoint_VRAM(x, y, color);
+			}
+		}
+	}
+}
+
 void drawSquare(struct Segment* pos, int size, color_t color) {
 	const int halfSize = size / 2;
 	for (int x = pos->x - halfSize; x < pos->x + halfSize; x++) {
@@ -79,7 +94,7 @@ void drawSquare(struct Segment* pos, int size, color_t color) {
 
 void render() {
 	for (int i = 0; i < MAX_FOOD; i++) {
-		drawSquare(&food[i], TILE_SIZE, COLOR_RED);
+		drawCircle(&food[i], TILE_SIZE / 2, COLOR_RED);
 	}
 
 	drawSquare(&snake, TILE_SIZE, COLOR_BLUE);
@@ -126,19 +141,25 @@ bool input() {
 			//Arrow keys
 			int hash = row * 0xFF + column;
 
+			int newDirection = -1;
+
 			switch (hash) {
 				case 0x7F8 + 0x02:
-					direction = 0;
+					newDirection = 0;
 				break;
 				case 0x7F8 + 0x03:
-					direction = 1;
+					newDirection = 1;
 				break;
 				case 0x8F7 + 0x03:
-					direction = 2;
+					newDirection = 2;
 				break;
 				case 0x8F7 + 0x02:
-					direction = 3;
+					newDirection = 3;
 				break;
+			}
+
+			if (newDirection != -1 && (direction - newDirection) % 2 != 0) {
+				direction = newDirection;
 			}
 		}
 
@@ -204,7 +225,13 @@ int main() {
 			if (state == STATE_MENU) {
 				PrintXY(1, 1, "--Snake:", TEXT_MODE_NORMAL, COLOR_BLACK);
 				PrintXY(1, 2, "--Definitive Edition", TEXT_MODE_NORMAL, COLOR_BLACK);
-				PrintXY(1, 3, "--Exe to start", TEXT_MODE_NORMAL, COLOR_BLACK);
+				PrintXY(1, 3, "--F1 to start", TEXT_MODE_NORMAL, COLOR_BLACK);
+
+				if (input()) {
+					//Hack for quitting
+					int key;
+					GetKey(&key);
+				}
 			} else if (state == STATE_GAME) {
 				lastSegment->x = snake.x;
 				lastSegment->y = snake.y;
@@ -238,13 +265,7 @@ int main() {
 			lastTick = RTC_GetTicks();
 		}
 
-		//Should exit?
-		if (input() || (state == STATE_GAME && collidesWithSelf())) {
-			if (state == STATE_MENU) {
-				if ((RTC_GetTicks() - lastTick) > TICK_RATE * 3) {
-					break;
-				}
-			} else {
+		if (state == STATE_GAME && (input() || collidesWithSelf())) {
 				Bdisp_AllClr_VRAM();
 
 				state = STATE_MENU;
@@ -256,7 +277,6 @@ int main() {
 
 				sys_free(food);
 			}
-		}
 	}
 
   return 0;
