@@ -31,6 +31,7 @@ struct Segment *lastSegment;
 
 //Snakes moving direction
 int direction = 1;
+int newDirection = -1;
 
 //Array of food locations
 struct Segment *food;
@@ -48,6 +49,11 @@ int lastRand = 0;
 int randint() {
 	lastRand = 0x41C64E6D * lastRand + 0x3039;
 	return lastRand;
+}
+
+void randomizeFood(int foodIndex) {
+	food[foodIndex].x = ((randint() % (MAX_X - 1)) + 1) * TILE_SIZE;
+	food[foodIndex].y = ((randint() % (MAX_Y - 6)) + 6) * TILE_SIZE;
 }
 
 void addSegment() {
@@ -76,7 +82,7 @@ void drawCircle(struct Segment* pos, int radius, color_t color) {
 			int xDiff = x - pos->x;
 			int yDiff = y - pos->y;
 
-			if (xDiff * xDiff + yDiff * yDiff < radius * radius) {
+			if (xDiff * xDiff + yDiff * yDiff < (radius * radius / 4)) {
 				Bdisp_SetPoint_VRAM(x, y, color);
 			}
 		}
@@ -94,7 +100,7 @@ void drawSquare(struct Segment* pos, int size, color_t color) {
 
 void render() {
 	for (int i = 0; i < MAX_FOOD; i++) {
-		drawCircle(&food[i], TILE_SIZE / 2, COLOR_RED);
+		drawCircle(&food[i], TILE_SIZE, (food[i].y % TILE_SIZE != 0) ? COLOR_BLACK : COLOR_RED);
 	}
 
 	drawSquare(&snake, TILE_SIZE, COLOR_BLUE);
@@ -133,15 +139,12 @@ bool input() {
 				food = sys_malloc(sizeof(struct Segment) * MAX_FOOD);
 
 				for (int i = 0; i < MAX_FOOD; i++) {
-					food[i].x = ((randint() % (MAX_X - 3)) + 1) * TILE_SIZE;
-					food[i].y = ((randint() % (MAX_Y - 3)) + 1) * TILE_SIZE;
+					randomizeFood(i);
 				}
 			}
 		} else if (state == STATE_GAME) {
 			//Arrow keys
 			int hash = row * 0xFF + column;
-
-			int newDirection = -1;
 
 			switch (hash) {
 				case 0x7F8 + 0x02:
@@ -156,10 +159,6 @@ bool input() {
 				case 0x8F7 + 0x02:
 					newDirection = 3;
 				break;
-			}
-
-			if (newDirection != -1 && (direction - newDirection) % 2 != 0) {
-				direction = newDirection;
 			}
 		}
 
@@ -206,8 +205,7 @@ void checkForFood() {
 		addSegment();
 
 		do {
-			food[foodIndex].x = ((randint() % MAX_X) + 1) * TILE_SIZE;
-			food[foodIndex].y = ((randint() % MAX_Y) + 1) * TILE_SIZE;
+			randomizeFood(foodIndex);
 		} while (collidesWithFood(false));
 	}
 }
@@ -237,6 +235,10 @@ int main() {
 				lastSegment->y = snake.y;
 
 				lastSegment = lastSegment->prev;
+
+				if (newDirection != -1 && (direction - newDirection) % 2 != 0) {
+					direction = newDirection;
+				}
 
 				if (direction % 2 == 0) {
 					snake.x -= (direction - 1) * TILE_SIZE;
