@@ -56,6 +56,8 @@ int randint() {
 	return lastRand;
 }
 
+//TODO: FOOD SPAWNS OUT OF VALID X BOUNDS!!!!!!
+
 //TODO: make pos a vector struct in segment?
 void randomizeFood(int foodIndex) {
 	bool collidesWithOther;
