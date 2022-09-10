@@ -4,9 +4,8 @@ A simple snake add-in.
 
 ### TODO:
     - Add a controls list
-    - Add different speed levels
     - Fix food spawning
-    - Make food render as a circle
-    - Add a score + highscore
+    - Highscore
     - Make a new logo
+    - Make the snake look better
 
