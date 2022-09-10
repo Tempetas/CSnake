@@ -5,7 +5,7 @@
 #include <fxcg/file.h>
 
 #include <stdbool.h>
-#include "itoa.h"
+#include "util.h"
 
 //Size of individual sprites and snake tiles
 #define TILE_SIZE 16
