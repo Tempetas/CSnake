@@ -8,14 +8,14 @@
 //Size of individual sprites and snake tiles
 #define TILE_SIZE 16
 
-//Game speed
-#define TICK_RATE 20
-
 #define STATE_MENU 0
 #define STATE_GAME 1
 
 //Amount of spawning apples
 #define MAX_FOOD 3
+
+//Game speed
+int TICK_RATE = 20;
 
 struct Segment {
 	int x;
@@ -161,6 +161,15 @@ bool input() {
 			if (newDirection != -1 && (direction - newDirection) % 2 != 0) {
 				direction = newDirection;
 			}
+            if ((column == 0x07) && (row == 0x0A)) {
+                TICK_RATE = 20;
+            } else if((column == 0x06) && (row == 0x0A)){
+                TICK_RATE = 15;
+            }else if((column == 0x05) && (row == 0x0A)){
+                TICK_RATE = 10;
+            }else if((column == 0x04) && (row == 0x0A)){
+                TICK_RATE = 5;
+            }
 		}
 
 		if ((column == 0x04) && (row == 0x09)) {
