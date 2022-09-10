@@ -165,15 +165,9 @@ bool input() {
 				direction = newDirection;
 			}
 
-      if ((column == 0x07) && (row == 0x0A)) {
-        TICK_RATE = 20;
-      } else if((column == 0x06) && (row == 0x0A)){
-        TICK_RATE = 15;
-      }else if((column == 0x05) && (row == 0x0A)){
-        TICK_RATE = 10;
-      }else if((column == 0x04) && (row == 0x0A)){
-        TICK_RATE = 5;
-      }
+			if (row == 0x0A) {
+				TICK_RATE = (column >= 0x04 && column <= 0x07) ? (column - 0x03) * 5 : TICK_RATE;
+			}
 		}
 
 		if ((column == 0x04) && (row == 0x09)) {
