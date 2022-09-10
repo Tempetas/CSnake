@@ -2,8 +2,10 @@
 #include <fxcg/keyboard.h>
 #include <fxcg/heap.h>
 #include <fxcg/rtc.h>
+#include <fxcg/file.h>
 
 #include <stdbool.h>
+#include "itoa.h"
 
 //Size of individual sprites and snake tiles
 #define TILE_SIZE 16
@@ -37,11 +39,14 @@ int newDirection = -1;
 struct Segment *food;
 
 int score = 0;
+int highScore = 0;
 
 int state = STATE_MENU;
 int lastTick;
 
 int MAX_X, MAX_Y;
+
+int dataFile = -1;
 
 //Random number generator
 int lastRand = 0;
@@ -55,6 +60,29 @@ void randomizeFood(int foodIndex) {
 	food[foodIndex].x = ((randint() % (MAX_X - 1)) + 1) * TILE_SIZE;
 	food[foodIndex].y = ((randint() % (MAX_Y - 6)) + 6) * TILE_SIZE;
 }
+
+/*void openDataFile() {
+	#define CREATEMODE_FILE 1
+	#define WRITE 2
+	#define READWRITE 3
+
+	#define FILE_PATH "snake-score.txt"
+
+	unsigned char pFile[sizeof(FILE_PATH) * 2] = FILE_PATH;
+
+	int hFile;
+
+	hFile = Bfile_OpenFile_OS(pFile, READWRITE, 0);
+
+	if (hFile < 0) {
+		int size = 64;
+		Bfile_CreateEntry_OS(pFile, CREATEMODE_FILE, &size);
+
+		hFile = Bfile_OpenFile_OS(pFile, READWRITE, 0);
+	}
+
+	dataFile = hFile;
+}*/
 
 void addSegment() {
 	struct Segment* seg = sys_malloc(sizeof(struct Segment));
@@ -102,6 +130,10 @@ void render() {
 	for (int i = 0; i < MAX_FOOD; i++) {
 		drawCircle(&food[i], TILE_SIZE, (food[i].y % TILE_SIZE != 0) ? COLOR_BLACK : COLOR_RED);
 	}
+
+	char scoreStr[15] = "--Score: ";
+
+	PrintXY(1, 0, itoa(snake.y, scoreStr, 9), TEXT_MODE_NORMAL, COLOR_BLACK);
 
 	drawSquare(&snake, TILE_SIZE, COLOR_BLUE);
 
@@ -161,12 +193,8 @@ bool input() {
 				break;
 			}
 
-			if (newDirection != -1 && (direction - newDirection) % 2 != 0) {
-				direction = newDirection;
-			}
-
 			if (row == 0x0A) {
-				TICK_RATE = (column >= 0x04 && column <= 0x07) ? (column - 0x03) * 5 : TICK_RATE;
+				TICK_RATE = (column >= 0x04 && column <= 0x07) ? 20 - (0x07 - column) * 5 : TICK_RATE;
 			}
 		}
 
@@ -207,7 +235,7 @@ int collidesWithFood(bool headOnly) {
 }
 
 void checkForFood() {
-	int foodIndex = collidesWithFood(true);
+	int foodIndex = collidesWithFood(false);
 
 	if (foodIndex) {
 		addSegment();
@@ -224,6 +252,18 @@ int main() {
 	MAX_X = LCD_WIDTH_PX / TILE_SIZE;
 	MAX_Y = LCD_HEIGHT_PX / TILE_SIZE;
 
+	/*openDataFile();
+
+	int fileSize = Bfile_GetFileSize_OS(dataFile);
+	char* scoreBuff = (char*)sys_malloc(fileSize);
+
+	printi("seek:",Bfile_SeekFile_OS(hFile, 6));
+	printi("write:",Bfile_WriteFile_OS(hFile, "World!", 7));
+
+	Bfile_ReadFile_OS(dataFile, scoreBuff, fileSize, 0);
+	highScore = atoi(scoreBuff);
+	sys_free(scoreBuff);*/
+
 	while (true) {
 		if ((RTC_GetTicks() - lastTick) > TICK_RATE) {
 			Bdisp_AllClr_VRAM();
@@ -232,6 +272,9 @@ int main() {
 				PrintXY(1, 1, "--Snake:", TEXT_MODE_NORMAL, COLOR_BLACK);
 				PrintXY(1, 2, "--Definitive Edition", TEXT_MODE_NORMAL, COLOR_BLACK);
 				PrintXY(1, 3, "--F1 to start", TEXT_MODE_NORMAL, COLOR_BLACK);
+
+				char scoreStr[25] = "--High score: ";
+				PrintXY(1, 4, itoa(highScore, scoreStr, 14), TEXT_MODE_NORMAL, COLOR_BLACK);
 
 				if (input()) {
 					//Hack for quitting
