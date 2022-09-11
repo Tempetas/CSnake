@@ -44,29 +44,26 @@ int highScore = 0;
 int state = STATE_MENU;
 int lastTick;
 
-int MAX_X, MAX_Y;
+int MAX_X;
+int MAX_Y;
 
 int dataFile = -1;
 
-//Random number generator
-int lastRand = 0;
+unsigned int lastRand;
 
-int randint() {
+unsigned int randint() {
 	lastRand = 0x41C64E6D * lastRand + 0x3039;
 	return lastRand;
 }
 
-//TODO: FOOD SPAWNS OUT OF VALID X BOUNDS!!!!!!
-
-//TODO: make pos a vector struct in segment?
 void randomizeFood(int foodIndex) {
 	bool collidesWithOther;
 
 	do {
 		collidesWithOther = false;
 
-		food[foodIndex].x = ((randint() % (MAX_X - 6)) + 7) * TILE_SIZE;
-		food[foodIndex].y = ((randint() % (MAX_Y - 6)) + 7) * TILE_SIZE;
+		food[foodIndex].x = ((randint() % (MAX_X - 1)) + 1) * TILE_SIZE;
+		food[foodIndex].y = (randint() % MAX_Y) * TILE_SIZE;
 
 		for (int i = 0; i < MAX_FOOD; i++) {
 			if (i != foodIndex && (food[i].x == food[foodIndex].x && food[i].y == food[foodIndex].y)) {
@@ -144,11 +141,11 @@ void drawSquare(struct Segment* pos, int size, color_t color) {
 
 void render() {
 	for (int i = 0; i < MAX_FOOD; i++) {
-		drawCircle(&food[i], TILE_SIZE, (food[i].y % TILE_SIZE != 0) ? COLOR_BLACK : COLOR_RED);
+		drawCircle(&food[i], TILE_SIZE, COLOR_RED);
 	}
 
 	/*char scoreStr[15] = "--Score: ";
-	PrintXY(1, 1, itoa(TICK_RATE, scoreStr, 9), TEXT_MODE_NORMAL, COLOR_BLACK);*/
+	PrintXY(1, 1, itoa(MAX_X, scoreStr, 9), TEXT_MODE_NORMAL, COLOR_BLACK);*/
 
 	drawSquare(&snake, TILE_SIZE, COLOR_BLUE);
 
@@ -238,8 +235,7 @@ int collidesWithFood(bool headOnly) {
 	struct Segment *seg = headOnly ? &snake : lastSegment;
 	do {
 		for (int i = 0; i < MAX_FOOD; i++) {
-			//TODO: get rid of this workaround
-			if (abs(seg->x - food[i].x) < TILE_SIZE / 2 && abs(seg->y - food[i].y) < TILE_SIZE / 2) {
+			if (seg->x == food[i].x && seg->y == food[i].y) {
 				return i;
 			}
 		}
@@ -247,18 +243,18 @@ int collidesWithFood(bool headOnly) {
 		seg = seg->prev;
 	} while (!headOnly && (seg->prev != lastSegment));
 
-	return 0;
+	return -1;
 }
 
 void checkForFood() {
-	int foodIndex = collidesWithFood(false);
+	int foodIndex = collidesWithFood(true);
 
-	if (foodIndex) {
+	if (foodIndex != -1) {
 		addSegment();
 
 		do {
 			randomizeFood(foodIndex);
-		} while (collidesWithFood(false));
+		} while (collidesWithFood(false) != -1);
 	}
 }
 

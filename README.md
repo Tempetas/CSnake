@@ -9,9 +9,7 @@ A simple snake add-in for fx-CG calculators.
 
 ## TODO:
     - Add a controls list in-game
-    - Fix food spawning
     - High-score
-    - Make a new logo
     - Make the snake look better (use actual sprites)
     - Better menu
 
