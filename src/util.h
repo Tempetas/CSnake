@@ -1,4 +1,16 @@
-//Stolen from the internet
+struct Segment {
+	int x;
+	int y;
+
+	struct Segment *prev;
+};
+
+unsigned int lastRand;
+
+unsigned int randint() {
+	lastRand = 0x41C64E6D * lastRand + 0x3039;
+	return lastRand;
+}
 
 int abs(int x) {
     return x < 0 ? -x : x;
@@ -54,4 +66,39 @@ int atoi(char* str) {
 
     return res;
 }
+
+/*void openDataFile() {
+	#define CREATEMODE_FILE 1
+	#define WRITE 2
+	#define READWRITE 3
+
+	#define FILE_PATH "snake-score.txt"
+
+	unsigned char pFile[sizeof(FILE_PATH) * 2] = FILE_PATH;
+
+	int hFile;
+
+	hFile = Bfile_OpenFile_OS(pFile, READWRITE, 0);
+
+	if (hFile < 0) {
+		int size = 64;
+		Bfile_CreateEntry_OS(pFile, CREATEMODE_FILE, &size);
+
+		hFile = Bfile_OpenFile_OS(pFile, READWRITE, 0);
+	}
+
+	dataFile = hFile;
+}*/
+
+	/*openDataFile();
+
+	int fileSize = Bfile_GetFileSize_OS(dataFile);
+	char* scoreBuff = (char*)sys_malloc(fileSize);
+
+	printi("seek:",Bfile_SeekFile_OS(hFile, 6));
+	printi("write:",Bfile_WriteFile_OS(hFile, "World!", 7));
+
+	Bfile_ReadFile_OS(dataFile, scoreBuff, fileSize, 0);
+	highScore = atoi(scoreBuff);
+	sys_free(scoreBuff);*/
 

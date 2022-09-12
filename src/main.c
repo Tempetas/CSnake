@@ -3,6 +3,7 @@
 #include <fxcg/heap.h>
 #include <fxcg/rtc.h>
 #include <fxcg/file.h>
+#include <fxcg/system.h>
 
 #include <stdbool.h>
 
@@ -20,13 +21,6 @@
 
 //Game speed
 int TICK_RATE = 20;
-
-struct Segment {
-	int x;
-	int y;
-
-	struct Segment *prev;
-};
 
 //Snakes head
 struct Segment snake;
@@ -51,13 +45,6 @@ int MAX_Y;
 
 int dataFile = -1;
 
-unsigned int lastRand;
-
-unsigned int randint() {
-	lastRand = 0x41C64E6D * lastRand + 0x3039;
-	return lastRand;
-}
-
 void randomizeFood(int foodIndex) {
 	bool collidesWithOther;
 
@@ -75,29 +62,6 @@ void randomizeFood(int foodIndex) {
 		}
 	} while (collidesWithOther);
 }
-
-/*void openDataFile() {
-	#define CREATEMODE_FILE 1
-	#define WRITE 2
-	#define READWRITE 3
-
-	#define FILE_PATH "snake-score.txt"
-
-	unsigned char pFile[sizeof(FILE_PATH) * 2] = FILE_PATH;
-
-	int hFile;
-
-	hFile = Bfile_OpenFile_OS(pFile, READWRITE, 0);
-
-	if (hFile < 0) {
-		int size = 64;
-		Bfile_CreateEntry_OS(pFile, CREATEMODE_FILE, &size);
-
-		hFile = Bfile_OpenFile_OS(pFile, READWRITE, 0);
-	}
-
-	dataFile = hFile;
-}*/
 
 void addSegment() {
 	struct Segment* seg = sys_malloc(sizeof(struct Segment));
@@ -155,7 +119,14 @@ void render() {
 
 	//Draw map borders
 	const color_t borderColor = COLOR_GREEN;
-	//...
+	const int borderWidth = 2;
+
+	drawRect(TILE_SIZE / 2 - borderWidth, TILE_SIZE / 2 - borderWidth, (MAX_X - 1) * TILE_SIZE + borderWidth, borderWidth, borderColor);
+
+	drawRect(TILE_SIZE / 2 - borderWidth, TILE_SIZE / 2 - borderWidth, borderWidth, MAX_Y * TILE_SIZE, borderColor);
+	drawRect((MAX_X - 0.5) * TILE_SIZE, TILE_SIZE / 2 - borderWidth, borderWidth, MAX_Y * TILE_SIZE, borderColor);
+
+	//TODO: last border
 }
 
 bool input() {
@@ -266,18 +237,6 @@ int main() {
 	MAX_X = LCD_WIDTH_PX / TILE_SIZE;
 	MAX_Y = LCD_HEIGHT_PX / TILE_SIZE;
 
-	/*openDataFile();
-
-	int fileSize = Bfile_GetFileSize_OS(dataFile);
-	char* scoreBuff = (char*)sys_malloc(fileSize);
-
-	printi("seek:",Bfile_SeekFile_OS(hFile, 6));
-	printi("write:",Bfile_WriteFile_OS(hFile, "World!", 7));
-
-	Bfile_ReadFile_OS(dataFile, scoreBuff, fileSize, 0);
-	highScore = atoi(scoreBuff);
-	sys_free(scoreBuff);*/
-
 	while (true) {
 		if ((RTC_GetTicks() - lastTick) > TICK_RATE) {
 			Bdisp_AllClr_VRAM();
@@ -285,10 +244,11 @@ int main() {
 			if (state == STATE_MENU) {
 				PrintXY(1, 1, "--Snake:", TEXT_MODE_NORMAL, COLOR_BLACK);
 				PrintXY(1, 2, "--Definitive Edition", TEXT_MODE_NORMAL, COLOR_BLACK);
-				PrintXY(1, 3, "--F1 to start", TEXT_MODE_NORMAL, COLOR_BLACK);
 
-				char scoreStr[25] = "--High score: ";
+				char scoreStr[25] = "--Highscore: ";
 				PrintXY(1, 4, itoa(highScore, scoreStr, 14), TEXT_MODE_NORMAL, COLOR_BLACK);
+
+				PrintXY(1, 6, "--F1 to start", TEXT_MODE_NORMAL, COLOR_BLACK);
 
 				if (input()) {
 					//Hack for quitting
@@ -332,10 +292,20 @@ int main() {
 			lastTick = RTC_GetTicks();
 		}
 
-		if (state == STATE_GAME && (input() || collidesWithSelf())) {
+		if (state == STATE_GAME) {
+			bool collides = collidesWithSelf();
+			if (collides || input()) {
 				Bdisp_AllClr_VRAM();
 
 				state = STATE_MENU;
+
+				if (collides) {
+					//So the player has time to realize they died
+					struct Segment pos = {.x = MAX_X / 2 * TILE_SIZE, .y = (MAX_Y + 1) / 2 * TILE_SIZE};
+					drawSprite(&pos, 32, SPRITE_SKULL);
+					Bdisp_PutDisp_DD();
+					OS_InnerWait_ms(750);
+				}
 
 				for (struct Segment* i = lastSegment; i->prev != lastSegment; i = i->prev) {
 					//TODO: does this work?
@@ -344,6 +314,7 @@ int main() {
 
 				sys_free(food);
 			}
+		}
 	}
 
   return 0;

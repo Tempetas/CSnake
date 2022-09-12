@@ -11,6 +11,4 @@ A simple snake add-in for fx-CG calculators.
     - Add a controls list in-game
     - Highscore
     - Better menu
-    - Fadeouts when switching states
-    - Visual borders around the playable area
 
