@@ -43,8 +43,6 @@ int lastTick;
 int MAX_X;
 int MAX_Y;
 
-int dataFile = -1;
-
 void drawSprite(struct Segment* pos, int size, float scale, color_t *sprite) {
 	const int halfSize = size / 2;
 	const int startX = pos->x - halfSize;
@@ -62,7 +60,7 @@ void drawScore() {
 	int textY = (MAX_Y + 0.65) * TILE_SIZE;
 
 	char scoreStr[15] = "Score: ";
-	PrintMini(&textX, &textY, itoa(score, scoreStr, 7), 0x40, 0xFFFFFFFF, 0, 0, COLOR_BLACK, COLOR_WHITE, 1, 0);
+	PrintMini(&textX, &textY, itoa(score, scoreStr, 7), 0x40, 0xFFFFFFFF, 0, 0, (score == highScore) ? COLOR_GREEN : COLOR_BLACK, COLOR_WHITE, 1, 0);
 }
 
 void randomizeFood(int foodIndex) {
@@ -164,6 +162,8 @@ bool input() {
 				lastSegment = sys_malloc(sizeof(struct Segment));
 				lastSegment->prev = lastSegment;
 
+				score = 0;
+
 				drawScore();
 
 				food = sys_malloc(sizeof(struct Segment) * MAX_FOOD);
@@ -253,6 +253,10 @@ int main() {
 	MAX_X = LCD_WIDTH_PX / TILE_SIZE;
 	MAX_Y = LCD_HEIGHT_PX / TILE_SIZE - 1;
 
+	openDataFile();
+	loadHighscore(&highScore);
+	closeDataFile();
+
 	drawMenu();
 
 	while (true) {
@@ -314,6 +318,10 @@ int main() {
 			bool collides = collidesWithSelf();
 			if (collides || input()) {
 				state = STATE_MENU;
+
+				openDataFile();
+				saveHighscore(&highScore);
+				closeDataFile();
 
 				Bdisp_AllClr_VRAM();
 

@@ -9,7 +9,6 @@ A simple snake add-in for fx-CG calculators.
 
 ## TODO:
     - Add a controls list in-game
-    - Highscore
     - Better menu
     - Colored background?
 

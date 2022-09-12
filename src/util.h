@@ -1,3 +1,5 @@
+#include <fxcg/file.h>
+
 struct Segment {
 	int x;
 	int y;
@@ -67,38 +69,46 @@ int atoi(char* str) {
     return res;
 }
 
-/*void openDataFile() {
-	#define CREATEMODE_FILE 1
-	#define WRITE 2
-	#define READWRITE 3
+int dataFile = -1;
+#define DATA_FILE_SIZE 32
 
-	#define FILE_PATH "snake-score.txt"
+void openDataFile() {
+  #define CREATEMODE_FILE 1
+  #define WRITE 2
+  #define READWRITE 3
 
-	unsigned char pFile[sizeof(FILE_PATH) * 2] = FILE_PATH;
+  #define FILE_PATH "\\\\fls0\\snake-score.sav"
 
-	int hFile;
+  unsigned short filePath[sizeof(FILE_PATH) * 2];
 
-	hFile = Bfile_OpenFile_OS(pFile, READWRITE, 0);
+  Bfile_StrToName_ncpy(filePath, (char*)FILE_PATH, sizeof(FILE_PATH));
+  dataFile = Bfile_OpenFile_OS(filePath, READWRITE, 0);
 
-	if (hFile < 0) {
-		int size = 64;
-		Bfile_CreateEntry_OS(pFile, CREATEMODE_FILE, &size);
+  if (dataFile < 0) {
+    unsigned int size = DATA_FILE_SIZE;
 
-		hFile = Bfile_OpenFile_OS(pFile, READWRITE, 0);
-	}
+    if(Bfile_CreateEntry_OS(filePath, CREATEMODE_FILE, &size) >= 0) {
+      dataFile = Bfile_OpenFile_OS(filePath, READWRITE, 0);
+    }
+  }
+}
 
-	dataFile = hFile;
-}*/
+void closeDataFile() {
+  Bfile_CloseFile_OS(dataFile);
+}
 
-	/*openDataFile();
+void saveHighscore(int *highScore) {
+  char tmpBuf[DATA_FILE_SIZE] = {0};
+  itoa(*highScore, tmpBuf, 0);
+  Bfile_SeekFile_OS(dataFile, 0);
+  Bfile_WriteFile_OS(dataFile, tmpBuf, sizeof(char) * DATA_FILE_SIZE);
+  tmpBuf[0] = '\0';
+  Bfile_WriteFile_OS(dataFile, tmpBuf, sizeof(char));
+}
 
-	int fileSize = Bfile_GetFileSize_OS(dataFile);
-	char* scoreBuff = (char*)sys_malloc(fileSize);
-
-	printi("seek:",Bfile_SeekFile_OS(hFile, 6));
-	printi("write:",Bfile_WriteFile_OS(hFile, "World!", 7));
-
-	Bfile_ReadFile_OS(dataFile, scoreBuff, fileSize, 0);
-	highScore = atoi(scoreBuff);
-	sys_free(scoreBuff);*/
+void loadHighscore(int *highScore) {
+  char tmpBuf[DATA_FILE_SIZE];
+  Bfile_ReadFile_OS(dataFile, tmpBuf, sizeof(int), 0);
+  *highScore = atoi(tmpBuf);
+}
 
