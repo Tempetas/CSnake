@@ -2,7 +2,6 @@
 #include <fxcg/keyboard.h>
 #include <fxcg/heap.h>
 #include <fxcg/rtc.h>
-#include <fxcg/file.h>
 #include <fxcg/system.h>
 
 #include <stdbool.h>
@@ -25,8 +24,8 @@ int TICK_RATE = 20;
 //Snakes head
 struct Segment snake;
 //Ptr to snakes tail
-struct Segment *lastSegment;
-//And the previously moved one
+struct Segment *tail;
+//Ptr to the previously moved segment
 struct Segment *lastMovedSegment;
 
 //Snakes moving direction
@@ -86,11 +85,11 @@ void randomizeFood(int foodIndex) {
 void addSegment() {
 	struct Segment* seg = sys_malloc(sizeof(struct Segment));
 
-	seg->x = lastSegment->x;
-	seg->y = lastSegment->y;
+	seg->x = tail->x;
+	seg->y = tail->y;
 
-	seg->prev = lastSegment;
-	lastSegment = seg;
+	seg->prev = tail;
+	tail = seg;
 
 	lastMovedSegment->prev = seg;
 
@@ -157,9 +156,9 @@ bool input() {
 				snake.x = startPos;
 				snake.y = startPos;
 
-				lastSegment = sys_malloc(sizeof(struct Segment));
-				lastSegment->prev = lastSegment;
-				lastMovedSegment = lastSegment;
+				tail = sys_malloc(sizeof(struct Segment));
+				tail->prev = tail;
+				lastMovedSegment = tail;
 
 				score = 0;
 
@@ -207,7 +206,7 @@ bool input() {
 //Returns whether snakes head hit the body
 bool collidesWithSelf() {
 	//Works because the snake can only collide with itself if its length is above 3
-	for (struct Segment *seg = lastSegment; seg->prev != lastSegment; seg = seg->prev) {
+	for (struct Segment *seg = tail; seg->prev != tail; seg = seg->prev) {
 			if ((snake.x == seg->x) && (snake.y == seg->y)) {
 			return true;
 		}
@@ -218,7 +217,7 @@ bool collidesWithSelf() {
 
 //Returns food index if collided
 int collidesWithFood(bool headOnly) {
-	struct Segment *seg = headOnly ? &snake : lastSegment;
+	struct Segment *seg = headOnly ? &snake : tail;
 	do {
 		for (int i = 0; i < MAX_FOOD; i++) {
 			if (seg->x == food[i].x && seg->y == food[i].y) {
@@ -227,7 +226,7 @@ int collidesWithFood(bool headOnly) {
 		}
 
 		seg = seg->prev;
-	} while (!headOnly && (seg->prev != lastSegment));
+	} while (!headOnly && (seg->prev != tail));
 
 	return -1;
 }
@@ -269,16 +268,16 @@ int main() {
 			} else if (state == STATE_GAME) {
 				const int halfSize = TILE_SIZE / 2;
 
-				struct display_fill segArea = {.x1 = lastSegment->x - halfSize, .x2 = lastSegment->x + halfSize - 1, .y1 = lastSegment->y - halfSize, .y2 = lastSegment->y + halfSize - 1, .mode = 0};
+				struct display_fill segArea = {.x1 = tail->x - halfSize, .x2 = tail->x + halfSize - 1, .y1 = tail->y - halfSize, .y2 = tail->y + halfSize - 1, .mode = 0};
 
 				Bdisp_AreaClr(&segArea, 1, COLOR_WHITE);
 
-				lastSegment->x = snake.x;
-				lastSegment->y = snake.y;
+				tail->x = snake.x;
+				tail->y = snake.y;
 
-				lastMovedSegment = lastSegment;
+				lastMovedSegment = tail;
 
-				lastSegment = lastSegment->prev;
+				tail = tail->prev;
 
 				drawSprite(&snake, TILE_SIZE, 2, SPRITE_SEGMENT);
 
@@ -305,7 +304,7 @@ int main() {
 				}
 
 				drawSprite(&snake, TILE_SIZE, 2, SPRITE_HEAD);
-				drawSprite(lastSegment, TILE_SIZE, 2, SPRITE_SEGMENT);
+				drawSprite(tail, TILE_SIZE, 2, SPRITE_SEGMENT);
 
 				checkForFood();
 			}
@@ -341,11 +340,11 @@ int main() {
 				drawMenu();
 
 				{
-					struct Segment* i = lastSegment;
+					struct Segment* i = tail;
 					do {
 						sys_free(i);
 						i = i->prev;
-					} while (i->prev != lastSegment);
+					} while (i->prev != tail);
 				}
 
 				sys_free(food);
