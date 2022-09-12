@@ -45,6 +45,18 @@ int MAX_Y;
 
 int dataFile = -1;
 
+void drawSprite(struct Segment* pos, int size, float scale, color_t *sprite) {
+	const int halfSize = size / 2;
+	const int startX = pos->x - halfSize;
+	const int startY = pos->y - halfSize;
+
+	for (int x = startX; x < pos->x + halfSize; x++) {
+		for (int y = startY; y < pos->y + halfSize; y++) {
+			Bdisp_SetPoint_VRAM(x, y, sprite[(int)((x - startX) / scale) + ((int)((y - startY) / scale) * (int)(size / scale))]);
+		}
+	}
+}
+
 void randomizeFood(int foodIndex) {
 	bool collidesWithOther;
 
@@ -61,6 +73,8 @@ void randomizeFood(int foodIndex) {
 			}
 		}
 	} while (collidesWithOther);
+
+	drawSprite(&food[foodIndex], TILE_SIZE, 1, SPRITE_APPLE);
 }
 
 void addSegment() {
@@ -81,52 +95,33 @@ void addSegment() {
 	score++;
 }
 
-void drawSprite(struct Segment* pos, int size, color_t *sprite) {
-	const int halfSize = size / 2;
-	const int startX = pos->x - halfSize;
-	const int startY = pos->y - halfSize;
-
-	for (int x = startX; x < pos->x + halfSize; x++) {
-		for (int y = startY; y < pos->y + halfSize; y++) {
-			Bdisp_SetPoint_VRAM(x, y, sprite[(x - startX) + ((y - startY) * size)]);
-		}
-	}
-}
-
 void drawRect(const int posX, const int posY, const int sizeX, const int sizeY, const color_t color) {
 	for (int x = posX; x < posX + sizeX; x++) {
-		for (int y = posY; y < posX + sizeY; y++) {
+		for (int y = posY; y < posY + sizeY; y++) {
 			Bdisp_SetPoint_VRAM(x, y, color);
 		}
 	}
 }
 
-void render() {
-	for (int i = 0; i < MAX_FOOD; i++) {
-		drawSprite(&food[i], TILE_SIZE, SPRITE_APPLE);
-	}
+void drawMenu() {
+	PrintXY(1, 1, "--Snake:", TEXT_MODE_NORMAL, COLOR_BLACK);
+	PrintXY(1, 2, "--Definitive Edition", TEXT_MODE_NORMAL, COLOR_BLACK);
 
-	/*char scoreStr[15] = "--Score: ";
-	PrintXY(1, 1, itoa(MAX_X, scoreStr, 9), TEXT_MODE_NORMAL, COLOR_BLACK);*/
+	char scoreStr[25] = "--Highscore: ";
+	PrintXY(1, 4, itoa(highScore, scoreStr, 13), TEXT_MODE_NORMAL, COLOR_BLACK);
 
-	drawSprite(&snake, TILE_SIZE, SPRITE_HEAD);
+	PrintXY(1, 6, "--F1 to start", TEXT_MODE_NORMAL, COLOR_BLACK);
+}
 
-	struct Segment *seg = lastSegment;
-	do {
-		drawSprite(seg, TILE_SIZE, SPRITE_SEGMENT);
-		seg = seg->prev;
-	} while (seg != lastSegment);
-
-	//Draw map borders
+void drawBorders() {
 	const color_t borderColor = COLOR_GREEN;
 	const int borderWidth = 2;
 
 	drawRect(TILE_SIZE / 2 - borderWidth, TILE_SIZE / 2 - borderWidth, (MAX_X - 1) * TILE_SIZE + borderWidth, borderWidth, borderColor);
+	drawRect(TILE_SIZE / 2 - borderWidth, ((MAX_Y) * TILE_SIZE), (MAX_X - 1) * TILE_SIZE + borderWidth, borderWidth, borderColor);
 
 	drawRect(TILE_SIZE / 2 - borderWidth, TILE_SIZE / 2 - borderWidth, borderWidth, MAX_Y * TILE_SIZE, borderColor);
-	drawRect((MAX_X - 0.5) * TILE_SIZE, TILE_SIZE / 2 - borderWidth, borderWidth, MAX_Y * TILE_SIZE, borderColor);
-
-	//TODO: last border
+	drawRect((MAX_X - 0.5) * TILE_SIZE, TILE_SIZE / 2 - borderWidth, borderWidth, MAX_Y * TILE_SIZE + borderWidth * 2, borderColor);
 }
 
 bool input() {
@@ -139,6 +134,10 @@ bool input() {
 		if ((column == 0x07) && (row == 0x0A)) {
 			if (state != STATE_GAME) {
 				state = STATE_GAME;
+
+				Bdisp_AllClr_VRAM();
+
+				//drawBorders();
 
 				//Hide the hud
 				EnableStatusArea(3);
@@ -161,7 +160,7 @@ bool input() {
 			}
 		} else if (state == STATE_GAME) {
 			//Arrow keys
-			int hash = row * 0xFF + column;
+			const int hash = row * 0xFF + column;
 
 			switch (hash) {
 				case 0x7F8 + 0x02:
@@ -220,7 +219,7 @@ int collidesWithFood(bool headOnly) {
 }
 
 void checkForFood() {
-	int foodIndex = collidesWithFood(true);
+	const int foodIndex = collidesWithFood(true);
 
 	if (foodIndex != -1) {
 		addSegment();
@@ -237,29 +236,29 @@ int main() {
 	MAX_X = LCD_WIDTH_PX / TILE_SIZE;
 	MAX_Y = LCD_HEIGHT_PX / TILE_SIZE;
 
+	drawMenu();
+
 	while (true) {
 		if ((RTC_GetTicks() - lastTick) > TICK_RATE) {
-			Bdisp_AllClr_VRAM();
-
 			if (state == STATE_MENU) {
-				PrintXY(1, 1, "--Snake:", TEXT_MODE_NORMAL, COLOR_BLACK);
-				PrintXY(1, 2, "--Definitive Edition", TEXT_MODE_NORMAL, COLOR_BLACK);
-
-				char scoreStr[25] = "--Highscore: ";
-				PrintXY(1, 4, itoa(highScore, scoreStr, 14), TEXT_MODE_NORMAL, COLOR_BLACK);
-
-				PrintXY(1, 6, "--F1 to start", TEXT_MODE_NORMAL, COLOR_BLACK);
-
 				if (input()) {
 					//Hack for quitting
 					int key;
 					GetKey(&key);
 				}
 			} else if (state == STATE_GAME) {
+				const int halfSize = TILE_SIZE / 2;
+
+				struct display_fill segArea = {.x1 = lastSegment->x - halfSize, .x2 = lastSegment->x + halfSize, .y1 = lastSegment->y - halfSize - 1, .y2 = lastSegment->y + halfSize - 1, .mode = 0};
+
+				Bdisp_AreaClr(&segArea, 1, COLOR_WHITE);
+
 				lastSegment->x = snake.x;
 				lastSegment->y = snake.y;
 
 				lastSegment = lastSegment->prev;
+
+				drawSprite(&snake, TILE_SIZE, 2, SPRITE_SEGMENT);
 
 				if (newDirection != -1 && (direction - newDirection) % 2 != 0) {
 					direction = newDirection;
@@ -283,8 +282,10 @@ int main() {
 					}
 				}
 
+				drawSprite(&snake, TILE_SIZE, 2, SPRITE_HEAD);
+				drawSprite(lastSegment, TILE_SIZE, 2, SPRITE_SEGMENT);
+
 				checkForFood();
-				render();
 			}
 
 			Bdisp_PutDisp_DD();
@@ -295,17 +296,23 @@ int main() {
 		if (state == STATE_GAME) {
 			bool collides = collidesWithSelf();
 			if (collides || input()) {
-				Bdisp_AllClr_VRAM();
-
 				state = STATE_MENU;
+
+				Bdisp_AllClr_VRAM();
 
 				if (collides) {
 					//So the player has time to realize they died
 					struct Segment pos = {.x = MAX_X / 2 * TILE_SIZE, .y = (MAX_Y + 1) / 2 * TILE_SIZE};
-					drawSprite(&pos, 32, SPRITE_SKULL);
+					drawSprite(&pos, 64, 4, SPRITE_SKULL);
+
 					Bdisp_PutDisp_DD();
+
 					OS_InnerWait_ms(750);
 				}
+
+				Bdisp_AllClr_VRAM();
+
+				drawMenu();
 
 				for (struct Segment* i = lastSegment; i->prev != lastSegment; i = i->prev) {
 					//TODO: does this work?
