@@ -26,6 +26,8 @@ int TICK_RATE = 20;
 struct Segment snake;
 //Ptr to snakes tail
 struct Segment *lastSegment;
+//And the previously moved one
+struct Segment *lastMovedSegment;
 
 //Snakes moving direction
 int direction = 1;
@@ -88,13 +90,9 @@ void addSegment() {
 	seg->y = lastSegment->y;
 
 	seg->prev = lastSegment;
-
-	//TODO: this is dumb
-	struct Segment* i = lastSegment;
-	for (; i->prev != lastSegment; i = i->prev);
-	i->prev = seg;
-
 	lastSegment = seg;
+
+	lastMovedSegment->prev = seg;
 
 	score++;
 
@@ -161,6 +159,7 @@ bool input() {
 
 				lastSegment = sys_malloc(sizeof(struct Segment));
 				lastSegment->prev = lastSegment;
+				lastMovedSegment = lastSegment;
 
 				score = 0;
 
@@ -277,6 +276,8 @@ int main() {
 				lastSegment->x = snake.x;
 				lastSegment->y = snake.y;
 
+				lastMovedSegment = lastSegment;
+
 				lastSegment = lastSegment->prev;
 
 				drawSprite(&snake, TILE_SIZE, 2, SPRITE_SEGMENT);
@@ -339,9 +340,12 @@ int main() {
 
 				drawMenu();
 
-				for (struct Segment* i = lastSegment; i->prev != lastSegment; i = i->prev) {
-					//TODO: does this work?
-					sys_free(i);
+				{
+					struct Segment* i = lastSegment;
+					do {
+						sys_free(i);
+						i = i->prev;
+					} while (i->prev != lastSegment);
 				}
 
 				sys_free(food);

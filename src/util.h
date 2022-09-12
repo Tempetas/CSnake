@@ -70,7 +70,7 @@ int atoi(char* str) {
 }
 
 int dataFile = -1;
-#define DATA_FILE_SIZE 32
+#define DATA_FILE_SIZE 16
 
 void openDataFile() {
   #define CREATEMODE_FILE 1
