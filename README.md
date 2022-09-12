@@ -11,5 +11,5 @@ A simple snake add-in for fx-CG calculators.
     - Add a controls list in-game
     - Highscore
     - Better menu
-    - Fix borders
+    - Colored background?
 

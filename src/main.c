@@ -57,6 +57,14 @@ void drawSprite(struct Segment* pos, int size, float scale, color_t *sprite) {
 	}
 }
 
+void drawScore() {
+	int textX = TILE_SIZE;
+	int textY = (MAX_Y + 0.65) * TILE_SIZE;
+
+	char scoreStr[15] = "Score: ";
+	PrintMini(&textX, &textY, itoa(score, scoreStr, 7), 0x40, 0xFFFFFFFF, 0, 0, COLOR_BLACK, COLOR_WHITE, 1, 0);
+}
+
 void randomizeFood(int foodIndex) {
 	bool collidesWithOther;
 
@@ -73,8 +81,6 @@ void randomizeFood(int foodIndex) {
 			}
 		}
 	} while (collidesWithOther);
-
-	drawSprite(&food[foodIndex], TILE_SIZE, 1, SPRITE_APPLE);
 }
 
 void addSegment() {
@@ -93,6 +99,12 @@ void addSegment() {
 	lastSegment = seg;
 
 	score++;
+
+	if (score > highScore) {
+		highScore = score;
+	}
+
+	drawScore();
 }
 
 void drawRect(const int posX, const int posY, const int sizeX, const int sizeY, const color_t color) {
@@ -118,9 +130,9 @@ void drawBorders() {
 	const int borderWidth = 2;
 
 	drawRect(TILE_SIZE / 2 - borderWidth, TILE_SIZE / 2 - borderWidth, (MAX_X - 1) * TILE_SIZE + borderWidth, borderWidth, borderColor);
-	drawRect(TILE_SIZE / 2 - borderWidth, ((MAX_Y) * TILE_SIZE), (MAX_X - 1) * TILE_SIZE + borderWidth, borderWidth, borderColor);
+	drawRect(TILE_SIZE / 2 - borderWidth, ((MAX_Y + 0.5) * TILE_SIZE), (MAX_X - 1) * TILE_SIZE + borderWidth, borderWidth, borderColor);
 
-	drawRect(TILE_SIZE / 2 - borderWidth, TILE_SIZE / 2 - borderWidth, borderWidth, MAX_Y * TILE_SIZE, borderColor);
+	drawRect(TILE_SIZE / 2 - borderWidth, TILE_SIZE / 2, borderWidth, MAX_Y * TILE_SIZE, borderColor);
 	drawRect((MAX_X - 0.5) * TILE_SIZE, TILE_SIZE / 2 - borderWidth, borderWidth, MAX_Y * TILE_SIZE + borderWidth * 2, borderColor);
 }
 
@@ -137,7 +149,7 @@ bool input() {
 
 				Bdisp_AllClr_VRAM();
 
-				//drawBorders();
+				drawBorders();
 
 				//Hide the hud
 				EnableStatusArea(3);
@@ -152,10 +164,13 @@ bool input() {
 				lastSegment = sys_malloc(sizeof(struct Segment));
 				lastSegment->prev = lastSegment;
 
+				drawScore();
+
 				food = sys_malloc(sizeof(struct Segment) * MAX_FOOD);
 
 				for (int i = 0; i < MAX_FOOD; i++) {
 					randomizeFood(i);
+					drawSprite(&food[i], TILE_SIZE, 1, SPRITE_APPLE);
 				}
 			}
 		} else if (state == STATE_GAME) {
@@ -227,6 +242,8 @@ void checkForFood() {
 		do {
 			randomizeFood(foodIndex);
 		} while (collidesWithFood(false) != -1);
+
+		drawSprite(&food[foodIndex], TILE_SIZE, 1, SPRITE_APPLE);
 	}
 }
 
@@ -234,7 +251,7 @@ int main() {
 	lastTick = RTC_GetTicks() - (TICK_RATE + 1);
 
 	MAX_X = LCD_WIDTH_PX / TILE_SIZE;
-	MAX_Y = LCD_HEIGHT_PX / TILE_SIZE;
+	MAX_Y = LCD_HEIGHT_PX / TILE_SIZE - 1;
 
 	drawMenu();
 
@@ -249,7 +266,7 @@ int main() {
 			} else if (state == STATE_GAME) {
 				const int halfSize = TILE_SIZE / 2;
 
-				struct display_fill segArea = {.x1 = lastSegment->x - halfSize, .x2 = lastSegment->x + halfSize, .y1 = lastSegment->y - halfSize - 1, .y2 = lastSegment->y + halfSize - 1, .mode = 0};
+				struct display_fill segArea = {.x1 = lastSegment->x - halfSize, .x2 = lastSegment->x + halfSize - 1, .y1 = lastSegment->y - halfSize, .y2 = lastSegment->y + halfSize - 1, .mode = 0};
 
 				Bdisp_AreaClr(&segArea, 1, COLOR_WHITE);
 
