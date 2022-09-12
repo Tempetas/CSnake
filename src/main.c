@@ -63,7 +63,7 @@ void randomizeFood(int foodIndex) {
 		collidesWithOther = false;
 
 		food[foodIndex].x = ((randint() % (MAX_X - 1)) + 1) * TILE_SIZE;
-		food[foodIndex].y = (randint() % MAX_Y) * TILE_SIZE;
+		food[foodIndex].y = ((randint() % MAX_Y) + 1) * TILE_SIZE;
 
 		for (int i = 0; i < MAX_FOOD; i++) {
 			if (i != foodIndex && (food[i].x == food[foodIndex].x && food[i].y == food[foodIndex].y)) {
