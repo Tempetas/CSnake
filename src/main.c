@@ -5,7 +5,9 @@
 #include <fxcg/file.h>
 
 #include <stdbool.h>
+
 #include "util.h"
+#include "sprites.h"
 
 //Size of individual sprites and snake tiles
 #define TILE_SIZE 16
@@ -13,7 +15,7 @@
 #define STATE_MENU 0
 #define STATE_GAME 1
 
-//Amount of spawning apples
+//How many apples should spawn
 #define MAX_FOOD 3
 
 //Game speed
@@ -115,25 +117,21 @@ void addSegment() {
 	score++;
 }
 
-void drawCircle(struct Segment* pos, int radius, color_t color) {
-	const int halfSize = radius / 2;
-	for (int x = pos->x - halfSize; x < pos->x + halfSize; x++) {
-		for (int y = pos->y - halfSize; y < pos->y + halfSize; y++) {
-			//Hack! In this house we hate math.h
-			int xDiff = x - pos->x;
-			int yDiff = y - pos->y;
+void drawSprite(struct Segment* pos, int size, color_t *sprite) {
+	const int halfSize = size / 2;
+	const int startX = pos->x - halfSize;
+	const int startY = pos->y - halfSize;
 
-			if (xDiff * xDiff + yDiff * yDiff < (radius * radius / 4)) {
-				Bdisp_SetPoint_VRAM(x, y, color);
-			}
+	for (int x = startX; x < pos->x + halfSize; x++) {
+		for (int y = startY; y < pos->y + halfSize; y++) {
+			Bdisp_SetPoint_VRAM(x, y, sprite[(x - startX) + ((y - startY) * size)]);
 		}
 	}
 }
 
-void drawSquare(struct Segment* pos, int size, color_t color) {
-	const int halfSize = size / 2;
-	for (int x = pos->x - halfSize; x < pos->x + halfSize; x++) {
-		for (int y = pos->y - halfSize; y < pos->y + halfSize; y++) {
+void drawRect(const int posX, const int posY, const int sizeX, const int sizeY, const color_t color) {
+	for (int x = posX; x < posX + sizeX; x++) {
+		for (int y = posY; y < posX + sizeY; y++) {
 			Bdisp_SetPoint_VRAM(x, y, color);
 		}
 	}
@@ -141,19 +139,23 @@ void drawSquare(struct Segment* pos, int size, color_t color) {
 
 void render() {
 	for (int i = 0; i < MAX_FOOD; i++) {
-		drawCircle(&food[i], TILE_SIZE, COLOR_RED);
+		drawSprite(&food[i], TILE_SIZE, SPRITE_APPLE);
 	}
 
 	/*char scoreStr[15] = "--Score: ";
 	PrintXY(1, 1, itoa(MAX_X, scoreStr, 9), TEXT_MODE_NORMAL, COLOR_BLACK);*/
 
-	drawSquare(&snake, TILE_SIZE, COLOR_BLUE);
+	drawSprite(&snake, TILE_SIZE, SPRITE_HEAD);
 
 	struct Segment *seg = lastSegment;
 	do {
-		drawSquare(seg, TILE_SIZE, COLOR_GREEN);
+		drawSprite(seg, TILE_SIZE, SPRITE_SEGMENT);
 		seg = seg->prev;
 	} while (seg != lastSegment);
+
+	//Draw map borders
+	const color_t borderColor = COLOR_GREEN;
+	//...
 }
 
 bool input() {

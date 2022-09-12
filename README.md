@@ -10,7 +10,7 @@ A simple snake add-in for fx-CG calculators.
 ## TODO:
     - Add a controls list in-game
     - Highscore
-    - Make the snake look better (use actual sprites)
     - Better menu
-    - Fadeouts for switching modes
+    - Fadeouts when switching states
+    - Visual borders around the playable area
 
