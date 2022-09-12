@@ -74,7 +74,6 @@ int dataFile = -1;
 
 void openDataFile() {
   #define CREATEMODE_FILE 1
-  #define WRITE 2
   #define READWRITE 3
 
   #define FILE_PATH "\\\\fls0\\snake-score.sav"
@@ -102,8 +101,6 @@ void saveHighscore(int *highScore) {
   itoa(*highScore, tmpBuf, 0);
   Bfile_SeekFile_OS(dataFile, 0);
   Bfile_WriteFile_OS(dataFile, tmpBuf, sizeof(char) * DATA_FILE_SIZE);
-  tmpBuf[0] = '\0';
-  Bfile_WriteFile_OS(dataFile, tmpBuf, sizeof(char));
 }
 
 void loadHighscore(int *highScore) {
