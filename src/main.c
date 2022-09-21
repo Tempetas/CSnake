@@ -64,6 +64,22 @@ void drawScore() {
 	PrintMini(&textX, &textY, itoa(score, scoreStr, 7), 0x40, 0xFFFFFFFF, 0, 0, (score == highScore) ? COLOR_GREEN : COLOR_BLACK, COLOR_WHITE, 1, 0);
 }
 
+//Returns food index if collided
+int collidesWithFood(bool headOnly) {
+	struct Segment *seg = headOnly ? &snake : tail;
+	do {
+		for (int i = 0; i < MAX_FOOD; i++) {
+			if (seg->x == food[i].x && seg->y == food[i].y) {
+				return i;
+			}
+		}
+
+		seg = seg->prev;
+	} while (!headOnly && (seg->prev != tail));
+
+	return -1;
+}
+
 void randomizeFood(int foodIndex) {
 	bool collidesWithOther;
 
@@ -79,6 +95,23 @@ void randomizeFood(int foodIndex) {
 				break;
 			}
 		}
+
+		//Code repetition lvl. 100
+		if (snake.x == food[foodIndex].x && snake.y == food[foodIndex].y) {
+				collidesWithOther = true;
+				continue;
+		}
+
+		struct Segment *seg = tail;
+		do {
+			if (seg->x == food[foodIndex].x && seg->y == food[foodIndex].y) {
+				collidesWithOther = true;
+				break;
+			}
+
+			seg = seg->prev;
+		} while (seg->prev != tail);
+
 	} while (collidesWithOther);
 }
 
@@ -108,6 +141,14 @@ void drawRect(const int posX, const int posY, const int sizeX, const int sizeY, 
 			Bdisp_SetPoint_VRAM(x, y, color);
 		}
 	}
+}
+
+void initDisplay() {
+	//Hide the status area
+	EnableStatusArea(3);
+
+	//Enable fancy colors
+	Bdisp_EnableColor(1);
 }
 
 void drawMenu() {
@@ -142,12 +183,11 @@ bool input() {
 			if (state != STATE_GAME) {
 				state = STATE_GAME;
 
+				initDisplay();
+
 				Bdisp_AllClr_VRAM();
 
 				drawBorders();
-
-				//Hide the hud
-				EnableStatusArea(3);
 
 				lastRand = RTC_GetTicks();
 
@@ -215,31 +255,13 @@ bool collidesWithSelf() {
 	return false;
 }
 
-//Returns food index if collided
-int collidesWithFood(bool headOnly) {
-	struct Segment *seg = headOnly ? &snake : tail;
-	do {
-		for (int i = 0; i < MAX_FOOD; i++) {
-			if (seg->x == food[i].x && seg->y == food[i].y) {
-				return i;
-			}
-		}
-
-		seg = seg->prev;
-	} while (!headOnly && (seg->prev != tail));
-
-	return -1;
-}
-
 void checkForFood() {
 	const int foodIndex = collidesWithFood(true);
 
 	if (foodIndex != -1) {
 		addSegment();
 
-		do {
-			randomizeFood(foodIndex);
-		} while (collidesWithFood(false) != -1);
+		randomizeFood(foodIndex);
 
 		drawSprite(&food[foodIndex], TILE_SIZE, 1, SPRITE_APPLE);
 	}
@@ -254,6 +276,9 @@ int main() {
 	openDataFile();
 	loadHighscore(&highScore);
 	closeDataFile();
+
+	initDisplay();
+	Bdisp_AllClr_VRAM();
 
 	drawMenu();
 
@@ -341,10 +366,12 @@ int main() {
 
 				{
 					struct Segment* i = tail;
+					struct Segment* prevprev = i->prev;
 					do {
 						sys_free(i);
-						i = i->prev;
-					} while (i->prev != tail);
+						i = prevprev;
+						prevprev = i->prev;
+					} while (prevprev != tail);
 				}
 
 				sys_free(food);
