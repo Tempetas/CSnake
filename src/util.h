@@ -10,8 +10,8 @@ struct Segment {
 unsigned int lastRand;
 
 unsigned int randint() {
-	lastRand = 0x41C64E6D * lastRand + 0x3039;
-	return lastRand;
+ lastRand = lastRand * 1664525 + 1013904223;
+ return lastRand;
 }
 
 int abs(int x) {

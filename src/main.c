@@ -19,7 +19,7 @@
 #define MAX_FOOD 3
 
 //Game speed
-int TICK_RATE = 20;
+int TICK_RATE = 15;
 
 //Snakes head
 struct Segment snake;
@@ -41,8 +41,12 @@ int highScore = 0;
 int state = STATE_MENU;
 int lastTick;
 
+bool paused = false;
+
 int MAX_X;
 int MAX_Y;
+
+int MAX_SCORE;
 
 void drawSprite(struct Segment* pos, int size, float scale, color_t *sprite) {
 	const int halfSize = size / 2;
@@ -56,12 +60,17 @@ void drawSprite(struct Segment* pos, int size, float scale, color_t *sprite) {
 	}
 }
 
-void drawScore() {
+void drawHud() {
 	int textX = TILE_SIZE;
 	int textY = (MAX_Y + 0.65) * TILE_SIZE;
 
-	char scoreStr[15] = "Score: ";
-	PrintMini(&textX, &textY, itoa(score, scoreStr, 7), 0x40, 0xFFFFFFFF, 0, 0, (score == highScore) ? COLOR_GREEN : COLOR_BLACK, COLOR_WHITE, 1, 0);
+	char scoreString[15] = "Score: ";
+	PrintMini(&textX, &textY, itoa(score, scoreString, 7), 0x40, 0xFFFFFFFF, 0, 0, (score == highScore) ? COLOR_GREEN : COLOR_BLACK, COLOR_WHITE, 1, 0);
+
+	textX += TILE_SIZE * 13;
+
+	char pstr[8] = "Paused  ";
+	PrintMini(&textX, &textY, pstr, 0x40, 0xFFFFFFFF, 0, 0, (paused) ? COLOR_BLACK : COLOR_WHITE, COLOR_WHITE, 1, 0);
 }
 
 //Returns food index if collided
@@ -87,7 +96,7 @@ void randomizeFood(int foodIndex) {
 		collidesWithOther = false;
 
 		food[foodIndex].x = ((randint() % (MAX_X - 1)) + 1) * TILE_SIZE;
-		food[foodIndex].y = ((randint() % MAX_Y) + 1) * TILE_SIZE;
+		food[foodIndex].y = ((((int)(randint() * 0.75) + randint()) % MAX_Y) + 1) * TILE_SIZE;
 
 		for (int i = 0; i < MAX_FOOD; i++) {
 			if (i != foodIndex && (food[i].x == food[foodIndex].x && food[i].y == food[foodIndex].y)) {
@@ -110,7 +119,7 @@ void randomizeFood(int foodIndex) {
 			}
 
 			seg = seg->prev;
-		} while (seg->prev != tail);
+		} while (seg != tail);
 
 	} while (collidesWithOther);
 }
@@ -132,7 +141,7 @@ void addSegment() {
 		highScore = score;
 	}
 
-	drawScore();
+	drawHud();
 }
 
 void drawRect(const int posX, const int posY, const int sizeX, const int sizeY, const color_t color) {
@@ -202,7 +211,7 @@ bool input() {
 
 				score = 0;
 
-				drawScore();
+				drawHud();
 
 				food = sys_malloc(sizeof(struct Segment) * MAX_FOOD);
 
@@ -232,6 +241,19 @@ bool input() {
 
 			if (row == 0x0A) {
 				TICK_RATE = (column >= 0x03 && column <= 0x06) ? 20 - (0x06 - column) * 5 : TICK_RATE;
+			}
+
+			if (column == 0x07) {
+				if (row >= 0x08 && row <= 0x09) {
+					paused = (row == 0x09);
+
+					if (!paused) {
+						//TODO: this looks messy
+						drawBorders();
+					}
+
+					drawHud();
+				}
 			}
 		}
 
@@ -273,6 +295,8 @@ int main() {
 	MAX_X = LCD_WIDTH_PX / TILE_SIZE;
 	MAX_Y = LCD_HEIGHT_PX / TILE_SIZE - 1;
 
+	MAX_SCORE = (MAX_X * MAX_Y) - MAX_FOOD - 13;
+
 	openDataFile();
 	loadHighscore(&highScore);
 	closeDataFile();
@@ -290,7 +314,7 @@ int main() {
 					int key;
 					GetKey(&key);
 				}
-			} else if (state == STATE_GAME) {
+			} else if (state == STATE_GAME && !paused) {
 				const int halfSize = TILE_SIZE / 2;
 
 				struct display_fill segArea = {.x1 = tail->x - halfSize, .x2 = tail->x + halfSize - 1, .y1 = tail->y - halfSize, .y2 = tail->y + halfSize - 1, .mode = 0};
@@ -332,6 +356,11 @@ int main() {
 				drawSprite(tail, TILE_SIZE, 2, SPRITE_SEGMENT);
 
 				checkForFood();
+			} else if (paused) {
+				//TODO:
+				//Allow users to go to the main menu when paused
+				/*int key;
+				GetKey(&key);*/
 			}
 
 			Bdisp_PutDisp_DD();
@@ -341,16 +370,16 @@ int main() {
 
 		if (state == STATE_GAME) {
 			bool collides = collidesWithSelf();
-			if (collides || input()) {
+			if (collides || input() || score >= MAX_SCORE) {
 				state = STATE_MENU;
 
 				openDataFile();
 				saveHighscore(&highScore);
 				closeDataFile();
 
-				Bdisp_AllClr_VRAM();
-
 				if (collides) {
+					Bdisp_AllClr_VRAM();
+
 					//So the player has time to realize they died
 					struct Segment pos = {.x = MAX_X / 2 * TILE_SIZE, .y = (MAX_Y + 1) / 2 * TILE_SIZE};
 					drawSprite(&pos, 64, 4, SPRITE_SKULL);
@@ -358,6 +387,9 @@ int main() {
 					Bdisp_PutDisp_DD();
 
 					OS_InnerWait_ms(750);
+				} else {
+					//So we dont get sent to the main menu immediately
+					OS_InnerWait_ms(500);
 				}
 
 				Bdisp_AllClr_VRAM();
