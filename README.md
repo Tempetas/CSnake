@@ -2,6 +2,8 @@
 
 A simple snake add-in for fx-CG calculators.
 
+![Screenshot](https://github.com/Tempetas/CSnake/blob/main/screenshot.png?raw=true)
+
 ## Controls
     - Press F1 to start the game, MENU to exit
     - Use (▴ ▸ ▾ ◂) to control the snake
